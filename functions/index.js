@@ -116,48 +116,83 @@ app.post("/signup", (req, res) => {
   let token, userId;
   // we need to make sure that the userName is unique
   db.doc(`/users/${newUser.userName}`)
-    .get()
-    .then((doc) => {
-      if (doc.exists) {
-        return res
-          .status(400)
-          .json({ userName: "This userName is already taken" });
-      } else {
-        // userName is uinique, so we can create it in the authentication store
-        return firebase
-          .auth()
-          .createUserWithEmailAndPassword(newUser.email, newUser.password);
-      }
-    })
-    // retrieve authentication token from google
-    .then((data) => {
-      userId = data.user.uid;
-      return data.user.getIdToken();
-    })
-    // create new document in the users collection for the signup (Separate from authentication store, so we can add to it later)
-    .then((idToken) => {
-      token = idToken;
-      const userCredentials = {
-        userName: newUser.userName,
-        email: newUser.email,
-        createdAt: new Date().toISOString(),
-        userId,
-      };
-      db.doc(`/users/${newUser.userName}`).set(userCredentials);
-    })
-    .then(() => {
-      // return the token to the client
-      return res.status(201).json({ token });
-    })
-    .catch((err) => {
-      // instead of using googles error codes, we want to generate our own, to maintain continuity
-      if (err.code === "auth/email-already-in-use") {
-        return res.status(400).json({ email: "Email already in use" });
-      } else {
-        return res.status(500).json({ error: err.code });
-      }
-    });
+  .get()
+  .then((doc) => {
+    if (doc.exists) {
+      return res
+      .status(400)
+      .json({ userName: "This userName is already taken" });
+    } else {
+      // userName is uinique, so we can create it in the authentication store
+      return firebase
+      .auth()
+      .createUserWithEmailAndPassword(newUser.email, newUser.password);
+    }
+  })
+  // retrieve authentication token from google
+  .then((data) => {
+    userId = data.user.uid;
+    return data.user.getIdToken();
+  })
+  // create new document in the users collection for the signup (Separate from authentication store, so we can add to it later)
+  .then((idToken) => {
+    token = idToken;
+    const userCredentials = {
+      userName: newUser.userName,
+      email: newUser.email,
+      createdAt: new Date().toISOString(),
+      userId,
+    };
+    db.doc(`/users/${newUser.userName}`).set(userCredentials);
+  })
+  .then(() => {
+    // return the token to the client
+    return res.status(201).json({ token });
+  })
+  .catch((err) => {
+    // instead of using googles error codes, we want to generate our own, to maintain continuity
+    if (err.code === "auth/email-already-in-use") {
+      return res.status(400).json({ email: "Email already in use" });
+    } else {
+      return res.status(500).json({ error: err.code });
+    }
+  });
 });
+
+// login route
+app.post('/login', (req, res) => {
+  const user = {
+    email: req.body.email,
+    password: req.body.password
+  }
+
+  let errors = {}
+
+  if (isEmpty(user.email)) errors.email = 'Must not be empty'
+  if (!isEmail(user.email)) errors.email = 'Must be a valid email address'
+  if (isEmpty(user.password)) errors.password = 'Must not be empty'
+
+  if (Object.keys(errors).length > 0) return res.status(400).json(errors);
+
+  firebase
+  .auth()
+  .signInWithEmailAndPassword(user.email, user.password)
+  .then((data) => {
+    return data.user.getIdToken()
+  })
+  .then((token) => {
+    return res.json({token})
+  })
+  .catch((err) => {
+    console.error(err)
+    if(err.code === 'auth/wrong-password'){
+      return res.status(403).json({general: 'Invalid Credentials - Please try again'})
+    } else return res.status(500).json({error: err.code})
+  })
+
+
+})
+
 
 // create our generic route (https://baseurl.com/api/)
 
