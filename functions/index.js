@@ -15,6 +15,7 @@ const config = {
 
 const firebase = require("firebase");
 const { object } = require("firebase-functions/lib/providers/storage");
+const { ResultStorage } = require("firebase-functions/lib/providers/testLab");
 firebase.initializeApp(config);
 
 const db = admin.firestore();
@@ -44,12 +45,43 @@ app.get("/blasts", (req, res) => {
     });
 });
 
+// Middleware to validate user is authorized to post
+const FBAuth = (req, res, next) => {
+  let idToken
+  if(req.headers.authorization && req.headers.authorization.startsWith('Bearer ')){
+    idToken = req.headers.authorization.split('Bearer ')[1]
+    console.error(idToken)
+  } else {
+    console.error('No token found')
+    return res.status(403).json({ error: 'Please Log In'})
+  }
+
+  admin.auth().verifyIdToken(idToken)
+  .then(decodedToken => {
+    req.user = decodedToken
+    console.log(decodedToken);
+    return db.collection('users')
+    .where('userId', '==', req.user.uid)
+    .limit(1)
+    .get()
+  })
+  .then(data => {
+    req.user.userName = data.docs[0].data().userName
+    return next()
+  })
+  .catch(err => {
+    console.error('Error while verifying token ', err)
+    return res.status(403).json(err)
+  })
+
+}
+
 // Function to create posts
-app.post("/blasts", (req, res) => {
+app.post("/blasts", FBAuth, (req, res) => {
   // using the request body to format our new post obect
   const newBlast = {
     body: req.body.body,
-    userName: req.body.userName,
+    userName: req.user.userName,
     createdAt: new Date().toISOString(),
   };
 
