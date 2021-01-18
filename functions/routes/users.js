@@ -11,8 +11,10 @@ const config = require("../util/config");
 const firebase = require("firebase");
 firebase.initializeApp(config);
 
-const { validateSignupData, validateLoginData } = require("../util/validators");
+const { validateSignupData, validateLoginData, reduceUserDetails } = require("../util/validators");
 
+
+// New User registration
 exports.signup = (req, res) => {
   const newUser = {
     email: req.body.email,
@@ -75,16 +77,19 @@ exports.signup = (req, res) => {
     });
 };
 
+
+// Login
 exports.login = (req, res) => {
   const user = {
     email: req.body.email,
     password: req.body.password,
   };
-
+  // Run helper function to validate the data
   const { valid, errors } = validateLoginData(user);
 
   if (!valid) return res.status(400).json(errors);
 
+  // call the firebase auth function to get the users idToken
   firebase
     .auth()
     .signInWithEmailAndPassword(user.email, user.password)
@@ -104,6 +109,15 @@ exports.login = (req, res) => {
     });
 };
 
+// User Profile details
+
+exports.addUserDetails = (req, res) => {
+  let userDetails = reduceUserDetails(req.body)
+
+}
+
+
+// Image Uploader
 exports.uploadImage = (req, res) => {
   const busboy = new BusBoy({ headers: req.headers });
 
