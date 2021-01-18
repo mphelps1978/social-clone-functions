@@ -1,4 +1,10 @@
-const { db } = require("../util/admin");
+const { admin, db } = require("../util/admin");
+
+// Image uploader imports
+const BusBoy = require("busboy");
+const path = require("path");
+const os = require("os");
+const fs = require("fs");
 
 const config = require("../util/config");
 
@@ -19,6 +25,8 @@ exports.signup = (req, res) => {
   const { valid, errors } = validateSignupData(newUser);
 
   if (!valid) return res.status(400).json(errors);
+
+  const noImg = 'no-image.png'
 
   let token, userId;
   // we need to make sure that the userName is unique
@@ -48,7 +56,8 @@ exports.signup = (req, res) => {
         userName: newUser.userName,
         email: newUser.email,
         createdAt: new Date().toISOString(),
-        userId,
+        imageUrl: `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${noImg}?alt=media`,
+        userId
       };
       db.doc(`/users/${newUser.userName}`).set(userCredentials);
     })
@@ -93,4 +102,61 @@ exports.login = (req, res) => {
           .json({ general: "Invalid Credentials - Please try again" });
       } else return res.status(500).json({ error: err.code });
     });
+};
+
+exports.uploadImage = (req, res) => {
+  const busboy = new BusBoy({ headers: req.headers });
+
+  let imageFileName;
+  let imageToBeUploaded = {};
+
+
+  busboy.on("file", (fieldName, file, filename, encoding, mimetype) => {
+
+    // we want to avoid users uploading anything except a png or jpg
+    if(mimetype !== 'image/jpeg' && mimetype !== 'image/png') {
+      return res.status(400).json({error: 'Invalid file type. Only PNG and JPEG are supported.'})
+    }
+
+    // to get the extension, we split the name into an array on the '.', and grab the last element in the array
+    // (in the event of a scenario where we have something like 'filename.something.png')
+    const imageExtension = filename.split(".")[filename.split(".").length - 1];
+
+    // We re-assign the filename to something random (using math.random) and round it to avoid decimal places
+    imageFileName = `${Math.round(Math.random() * 10000000)}.${imageExtension}`;
+
+    // Now we set up the new path to the file, adding the filename
+    const filepath = path.join(os.tmpdir(), imageFileName);
+
+    // and create an upload stream to upload the image
+    imageToBeUploaded = { filepath, mimetype };
+    file.pipe(fs.createWriteStream(filepath));
+  });
+
+  // once the upload is finished, we need to store it in our FireBase bucket, giving it some metadata
+  busboy.on("finish", () => {
+    admin
+      .storage()
+      .bucket()
+      .upload(imageToBeUploaded.filepath, {
+        resumable: false,
+        metadata: {
+          metadata: {
+            contentType: imageToBeUploaded.mimetype,
+          },
+        },
+      })
+      .then(() => {
+        const imageUrl = `https://firebasestorage.googleapis.com/v0/b/${config.storageBucket}/o/${imageFileName}?alt=media`;
+        return db.doc(`/users/${req.user.userName}`).update({ imageUrl });
+      })
+      .then(() => {
+        return res.json({ message: "image uploaded successfully" });
+      })
+      .catch((err) => {
+        console.error(err);
+        return res.status(500).json({ error: "something went wrong" });
+      });
+  });
+  busboy.end(req.rawBody)
 };
