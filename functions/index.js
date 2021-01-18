@@ -5,7 +5,7 @@ const app = require('express')()
 const FBAuth = require('./util/FBAuth')
 
 const {getAllBlasts, postNewBlast} = require('./routes/blasts')
-const {signup, login, uploadImage} = require('./routes/users')
+const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = require('./routes/users')
 
 
 // Blasts routes
@@ -16,6 +16,8 @@ app.post('/blast', FBAuth, postNewBlast)
 app.post('/register', signup)
 app.post('/login', login)
 app.post('/user/image', FBAuth, uploadImage)
+app.post('/user', FBAuth, addUserDetails)
+app.get('/user', FBAuth, getAuthenticatedUser)
 
 
 // create our generic route (https://baseurl.com/api/)
