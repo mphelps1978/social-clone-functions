@@ -46,3 +46,29 @@ exports.postNewBlast = (req, res) => {
       console.error(err);
     });
 }
+
+exports.getBlast = (req, res) => {
+  let blastData = {}
+    db.doc(`/blasts/${req.params.blastId}`).get()
+    .then(doc => {
+      if(!doc.exists){
+        return res.status(404).json({error: 'Blast not found'})
+      }
+      blastData = doc.data()
+      blastData.blastId = doc.id
+      return db.collection('comments').orderBy('createdAt', 'desc').where('blastId', '==', req.params.blastId).get()
+    })
+    .then((data) => {
+      // console.log(data)
+      blastData.comments = []
+      data.forEach((doc) => {
+        blastData.comments.push(doc.data())
+      })
+      return res.json(blastData)
+    })
+    .catch(err => {
+      console.error(err)
+      res.status(500).json({error: err.code})
+    })
+
+}

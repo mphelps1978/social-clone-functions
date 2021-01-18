@@ -4,13 +4,15 @@ const app = require('express')()
 
 const FBAuth = require('./util/FBAuth')
 
-const {getAllBlasts, postNewBlast} = require('./routes/blasts')
+const {getAllBlasts, postNewBlast, getBlast} = require('./routes/blasts')
 const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = require('./routes/users')
 
 
 // Blasts routes
 app.get('/blasts', getAllBlasts)
 app.post('/blast', FBAuth, postNewBlast)
+app.get('/blast/:blastId', getBlast)
+//TODO: delete, like, unlike, comment,
 
 // Users routes
 app.post('/register', signup)
