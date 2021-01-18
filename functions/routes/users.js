@@ -113,6 +113,11 @@ exports.uploadImage = (req, res) => {
 
   busboy.on("file", (fieldName, file, filename, encoding, mimetype) => {
 
+    // we want to avoid users uploading anything except a png or jpg
+    if(mimetype !== 'image/jpeg' && mimetype !== 'image/png') {
+      return res.status(400).json({error: 'Invalid file type. Only PNG and JPEG are supported.'})
+    }
+
     // to get the extension, we split the name into an array on the '.', and grab the last element in the array
     // (in the event of a scenario where we have something like 'filename.something.png')
     const imageExtension = filename.split(".")[filename.split(".").length - 1];
