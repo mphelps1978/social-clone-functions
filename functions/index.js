@@ -1,10 +1,11 @@
+require('dotenv').config()
 const functions = require('firebase-functions')
 
 const app = require('express')()
 
 const FBAuth = require('./util/FBAuth')
 
-const {getAllBlasts, postNewBlast, getBlast} = require('./routes/blasts')
+const {getAllBlasts, postNewBlast, getBlast, commentOnBlast} = require('./routes/blasts')
 const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = require('./routes/users')
 
 
@@ -12,7 +13,8 @@ const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = requi
 app.get('/blasts', getAllBlasts)
 app.post('/blast', FBAuth, postNewBlast)
 app.get('/blast/:blastId', getBlast)
-//TODO: delete, like, unlike, comment,
+app.post('/blast/:blastId/comment', FBAuth, commentOnBlast)
+//TODO: delete, like, unlike,
 
 // Users routes
 app.post('/register', signup)

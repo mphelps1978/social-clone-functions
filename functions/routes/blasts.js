@@ -47,6 +47,7 @@ exports.postNewBlast = (req, res) => {
     });
 }
 
+// fetch one blast with comments
 exports.getBlast = (req, res) => {
   let blastData = {}
     db.doc(`/blasts/${req.params.blastId}`).get()
@@ -56,7 +57,7 @@ exports.getBlast = (req, res) => {
       }
       blastData = doc.data()
       blastData.blastId = doc.id
-      return db.collection('comments').orderBy('createdAt', 'desc').where('blastId', '==', req.params.blastId).get()
+      return db.collection('comments').orderBy('createdAt', 'asc').where('blastId', '==', req.params.blastId).get()
     })
     .then((data) => {
       // console.log(data)
@@ -70,5 +71,32 @@ exports.getBlast = (req, res) => {
       console.error(err)
       res.status(500).json({error: err.code})
     })
+}
 
+// comment on a blast
+exports.commentOnBlast = (req, res) => {
+  if(req.body.body === '') return res.status(400).json({ error: 'must not be empty'})
+
+  const newComment = {
+    body: req.body.body,
+    createdAt: new Date().toISOString(),
+    blastId: req.params.blastId,
+    userName: req.user.userName,
+    userImage: req.user.imageUrl
+  }
+
+  db.doc(`/blasts/${req.params.blastId}`).get()
+  .then(doc => {
+    if(!doc.exists){
+      return res.status(404).json({error: "This blast no longer exists"})
+    }
+    return db.collection('comments').add(newComment)
+  })
+  .then(() => {
+    res.json(newComment)
+  })
+  .catch(err => {
+    console.error(err)
+    res.status(500).json({error: 'Something went wrong'})
+  })
 }

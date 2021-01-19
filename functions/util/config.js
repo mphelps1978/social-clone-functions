@@ -1,3 +1,5 @@
+const { storage } = require('firebase-admin');
+
 module.exports = {
   apiKey: "AIzaSyBvgdEXo3WWapvVLqO-OdA6SriH1gK3Bvs",
   authDomain: "socialmediaclone-f5653.firebaseapp.com",
