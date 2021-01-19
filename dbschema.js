@@ -36,6 +36,16 @@ let db = {
       body: 'string',
       createdAt: 'timestamp'
     }
+  ],
+  notifications: [
+   {
+     recipient: 'user who made the post or comment',
+     sender: 'user who created the notification (by liking)',
+     read: 'boolean',
+     blastId: 'string',
+     type: 'like or comment',
+     createdAt: 'string (Date ISO)'
+    }
   ]
 }
 
