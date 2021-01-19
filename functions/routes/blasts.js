@@ -52,6 +52,30 @@ exports.postNewBlast = (req, res) => {
     });
 }
 
+// Delete Blast
+exports.deleteBlast = (req, res) => {
+  const document = db.doc(`/blasts/${req.params.blastId}`)
+  document.get()
+  .then(doc => {
+    if(!doc.exists){
+      return res.status(404).json({ error: 'Blast not found'})
+    } else {
+      if(doc.data().userName !== req.user.userName){
+        return res.staus(403).json({ error: 'You didn\'t write this'})
+      } else {
+        return document.delete()
+      }
+    }
+  })
+  .then(() => {
+    res.json({message: 'Blast deleted'})
+  })
+  .catch(err => {
+    console.error(err)
+    res.status(500).json({error: err.code})
+  })
+}
+
 // fetch one blast with comments
 exports.getBlast = (req, res) => {
   let blastData = {}

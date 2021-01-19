@@ -5,7 +5,7 @@ const app = require('express')()
 
 const FBAuth = require('./util/FBAuth')
 
-const {getAllBlasts, postNewBlast, getBlast, commentOnBlast, likeBlast, unlikeBlast} = require('./routes/blasts')
+const {getAllBlasts, postNewBlast, getBlast, commentOnBlast, likeBlast, unlikeBlast, deleteBlast} = require('./routes/blasts')
 const {signup, login, uploadImage, addUserDetails, getAuthenticatedUser} = require('./routes/users')
 
 
@@ -16,7 +16,8 @@ app.get('/blast/:blastId', getBlast)
 app.post('/blast/:blastId/comment', FBAuth, commentOnBlast)
 app.get('/blast/:blastId/like', FBAuth, likeBlast)
 app.get('/blast/:blastId/unlike', FBAuth, unlikeBlast)
-//TODO: delete
+app.delete('/blast/:blastId', FBAuth, deleteBlast)
+
 
 // Users routes
 app.post('/register', signup)
