@@ -135,7 +135,7 @@ exports.getAuthenticatedUser = (req, res) => {
   })
   .then(data => {
     userData.likes = []
-    data.forEach(doc => {
+    data.forEach((doc) => {
       userData.likes.push(doc.data())
     })
     return res.json(userData)
