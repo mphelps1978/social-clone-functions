@@ -12,6 +12,7 @@ const firebase = require("firebase");
 firebase.initializeApp(config);
 
 const { validateSignupData, validateLoginData, reduceUserDetails } = require("../util/validators");
+const { response } = require("express");
 
 
 // New User registration
@@ -123,7 +124,7 @@ exports.addUserDetails = (req, res) => {
   })
 }
 
-// Get user details
+// Get own user details
 exports.getAuthenticatedUser = (req, res) => {
   let userData = {}
   db.doc(`/users/${req.user.userName}`).get()
@@ -138,6 +139,24 @@ exports.getAuthenticatedUser = (req, res) => {
     data.forEach((doc) => {
       userData.likes.push(doc.data())
     })
+    return db
+    .collection('notifications')
+    .where('recipient', '==', req.user.userName)
+    .orderBy('createdAt', 'desc').get()
+  })
+  .then(data => {
+    userData.notifications = []
+    data.forEach(doc => {
+      userData.notifications.push({
+        recipient: doc.data().recipient,
+        sender: doc.data().sender,
+        read: doc.data().read,
+        blastId: doc.data().blastId,
+        type: doc.data().type,
+        createdAt: doc.data().createdAt,
+        notificationId: doc.id
+      })
+    })
     return res.json(userData)
   })
   .catch(err => {
@@ -145,6 +164,45 @@ exports.getAuthenticatedUser = (req, res) => {
     return res.status(500).json({error: err.code})
   })
 }
+
+// get any users details
+exports.getUserDetails = (req, res) => {
+  let userData = {};
+  db.doc(`/users/${req.params.userName}`)
+    .get()
+    .then((doc) => {
+      if (doc.exists) {
+        userData.user = doc.data();
+        return db
+          .collection("blasts")
+          .where("userName", "==", req.params.userName)
+          .orderBy("createdAt", "desc")
+          .get();
+      } else {
+
+        return res.status(404).json({ error: "User not found" });
+      }
+    })
+    .then((data) => {
+      userData.blasts = [];
+      data.forEach((doc) => {
+        userData.blasts.push({
+          body: doc.data().body,
+          createdAt: doc.data().createdAt,
+          userName: doc.data().userName,
+          userImage: doc.data().userImage,
+          likeCount: doc.data().likeCount,
+          commentCount: doc.data().commentCount,
+          blastId: doc.id,
+        });
+      });
+      return res.json(userData);
+    })
+    .catch((err) => {
+      console.error(err);
+      return res.status(500).json({ error: err.code });
+    });
+};
 
 
 // Image Uploader
